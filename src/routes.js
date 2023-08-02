@@ -9,6 +9,8 @@ import LoginPage from './pages/LoginPage';
 import Page404 from './pages/Page404';
 import ProductsPage from './pages/ProductsPage';
 import DashboardAppPage from './pages/DashboardAppPage';
+import InspectionHistoryPage from './pages/InspectionHistoryPage';
+import RepairmentHistoryPage from './pages/RepairmentHistoryPage';
 
 // ----------------------------------------------------------------------
 
@@ -23,6 +25,8 @@ export default function Router() {
         { path: 'user', element: <UserPage /> },
         { path: 'products', element: <ProductsPage /> },
         { path: 'blog', element: <BlogPage /> },
+        { path: 'inspection', element: <InspectionHistoryPage /> },
+        { path: 'repairment', element: <RepairmentHistoryPage /> },
       ],
     },
     {

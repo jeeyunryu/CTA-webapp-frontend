@@ -3,7 +3,6 @@ import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
 import { useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { useNavigate } from "react-router-dom";
 
 // import 'ag-grid-community/styles/ag-grid.css';
 // import 'ag-grid-community/styles/ag-theme-alpine.css';
@@ -45,16 +44,10 @@ import USERLIST from '../_mock/user';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: '설비코드', alignRight: false },
-  { id: 'company', label: '설비명', alignRight: false },
-  { id: 'role', label: '설치일자', alignRight: false },
-  { id: 'isVerified', label: '설치위치', alignRight: false },
-  { id: 'status', label: '최신 상태', alignRight: false },
-  { id: 'latestInspectionDate', label: '최종 점검일', alignRight: false },
-  { id: 'isDefective', label: '수리필요여부', alignRight: false },
-  { id: 'repairmentHistory', label: '수리 이력', alignRight: false },
-  { id: 'inspectionHistory', label: '점검 이력', alignRight: false },
-  { id: 'etc', label: '비고', alignRight: false}
+    { id: 'inspectionDate', label: '날짜', alignRight: false },
+    { id: 'inspectionTime', label: '시간', alignRight: false },
+    { id: 'color', label: '색상', alignRight: false },
+    { id: 'state', label: '상태', alignRight: false },
   
 ];
 
@@ -106,24 +99,15 @@ export default function UserPage() {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const [openAdd, setOpenAdd] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
-
-  const handleClickOpenEdit = () => {
-    setOpenEdit(true);
-  }
-
-  const handleCloseEdit = () => {
-    setOpenEdit(false);
-  }
+  const [open2, setOpen2] = useState(false);
 
   
-  const handleClickOpenAdd = () => {
-    setOpenAdd(true);
+  const handleClickOpen = () => {
+    setOpen2(true);
   }
 
   const handleClose = () => {
-    setOpenAdd(false);
+    setOpen2(false);
   }
 
 
@@ -186,19 +170,6 @@ export default function UserPage() {
 
   const isNotFound = !filteredUsers.length && !!filterName;
 
-  const navigate = useNavigate();
-  const routeChange = () => {
-    const path = '/dashboard/repairment';
-    navigate(path);
-  }
-
-  const routeChange2 = () => {
-    const path = '/dashboard/inspection';
-    navigate(path);
-  }
-
-  
-
 
   return (
     <>
@@ -209,12 +180,12 @@ export default function UserPage() {
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
-            설비 목록
+            점검 이력
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenAdd}>
+          {/* <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpen}>
             설비 추가
           </Button>
-          <Dialog open={openAdd} onClose={handleClose}>
+          <Dialog open={open2} onClose={handleClose}>
             <DialogTitle>설비 추가</DialogTitle>
             <DialogContent>
               <DialogContentText>
@@ -246,15 +217,15 @@ export default function UserPage() {
               />
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleClose}>취소</Button>
-              <Button onClick={handleClose}>추가</Button>
+              <Button onclick={handleClose}>취소</Button>
+              <Button onclick={handleClose}>추가</Button>
             </DialogActions>
-          </Dialog>
+          </Dialog> */}
         </Stack>
 
 
         <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          {/* <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} /> */}
 
           <Scrollbar>
            
@@ -271,15 +242,15 @@ export default function UserPage() {
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, code, name, installationDate, location, state, latestInspectionDate, isDefective, repairmentHistory, inspectionHistory } = row;
+                    const { name, id, inspectionDate, inspectionTime, color, state } = row;
                     // const { id, name, role, status, company, avatarUrl, isVerified, latestInspectionDate, isDefective, repairmentHistory, inspectionHistory } = row;
                     const selectedUser = selected.indexOf(name) !== -1;
 
                     return (
                       <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
-                        <TableCell padding="checkbox">
+                        {/* <TableCell padding="checkbox">
                           <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
-                        </TableCell>
+                        </TableCell> */}
 
                         {/* <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
@@ -300,29 +271,22 @@ export default function UserPage() {
                           <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
                         </TableCell> */}
                         
-                        <TableCell align="left">{code}</TableCell>
+                        <TableCell align="left">{inspectionDate}</TableCell>
 
-                        <TableCell align="left">{name}</TableCell>
+                        <TableCell align="left">{inspectionTime}</TableCell>
 
-                        <TableCell align="left">{installationDate}</TableCell>
-
-                        <TableCell align="left">{location}</TableCell>
+                        <TableCell align="left">{color}</TableCell>
 
                         <TableCell align="left">{state}</TableCell>
+                        <TableCell align="left">{state}</TableCell>
 
-                        <TableCell align="left">{latestInspectionDate}</TableCell>
+                    
 
-                        <TableCell align="left">{isDefective ? '필요' : '불필요'}</TableCell>
-
-                        <TableCell align="left"><Button variant="text" onClick={routeChange}>확인</Button></TableCell>
-
-                        <TableCell align="left"><Button variant="text" onClick={routeChange2}>확인</Button></TableCell>
-
-                        <TableCell align="right">
+                        {/* <TableCell align="right">
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}
@@ -390,46 +354,10 @@ export default function UserPage() {
           },
         }}
       >
-        <MenuItem onClick={handleClickOpenEdit}> 
+        <MenuItem>
           <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
           수정하기
         </MenuItem>
-        <Dialog open={openEdit} onClose={handleCloseEdit}>
-            <DialogTitle>내용 수정</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                내용을 자유롭게 수정하세요
-              </DialogContentText>
-              <TextField 
-                margin="dense"
-                label="설비코드"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설비명"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 일자"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 위치"
-                fullWidth
-                variant="standard"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>취소</Button>
-              <Button onClick={handleClose}>추가</Button>
-            </DialogActions>
-          </Dialog>
 
         <MenuItem sx={{ color: 'error.main' }}>
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
