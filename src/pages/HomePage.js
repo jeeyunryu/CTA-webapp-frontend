@@ -1,9 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
-import { sentenceCase } from 'change-case';
-import { useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
+// import { sentenceCase } from 'change-case';
+import { useState, useEffect } from 'react';
+// import { AgGridReact } from 'ag-grid-react';
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
+
 
 // import 'ag-grid-community/styles/ag-grid.css';
 // import 'ag-grid-community/styles/ag-theme-alpine.css';
@@ -40,7 +42,10 @@ import Scrollbar from '../components/scrollbar';
 // sections
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
-import USERLIST from '../_mock/user';
+import { fetchEquipmentData } from '../_mock/equipments';
+import DialogTag from './DialogTag';
+
+
 
 // ----------------------------------------------------------------------
 
@@ -89,10 +94,10 @@ function applySortFilter(array, comparator, query) {
   return stabilizedThis.map((el) => el[0]);
 }
 
-
-
 export default function UserPage() {
-  const [open, setOpen] = useState(null);
+  const [userList, setUserList] = useState([])
+  const [openMenu, setOpenMenu] = useState(null);
+  const [currentRow, setCurrentRow] = useState(null);
 
   const [page, setPage] = useState(0);
 
@@ -106,33 +111,110 @@ export default function UserPage() {
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  const [openAdd, setOpenAdd] = useState(false);
+  const [openCreate, setOpenCreate] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
+  
+  const [textInputCode, setTextInputCode] = useState('');
+  const [textInputName, setTextInputName] = useState('');
+  const [textInputInstallationDate, setTextInputInstallationDate] = useState('');
+  const [textInputLocation, setTextInputLocation] = useState('');
 
+  useEffect(() => {
+    async function fetchData () {
+      const equipments = await fetchEquipmentData();
+      console.log('equipments =', equipments)
+      setUserList(equipments);
+    }
+    fetchData();
+  }, []);
+
+// 추가하기/수정하기 다이얼로그에서 사용자 입력값 저장함
+  const handleTextInputChangeCode = event => {
+    setTextInputCode(event.target.value);
+  };
+
+  const handleTextInputChangeName = event => {
+    setTextInputName(event.target.value);
+  };
+
+  const handleTextInputChangeInstallationDate = event => {
+    setTextInputInstallationDate(event.target.value);
+  };
+
+  const handleTextInputChangeLocation = event => {
+    setTextInputLocation(event.target.value);
+  };
+
+
+// 수정하기 다이얼로그 열기
   const handleClickOpenEdit = () => {
+    // setTextEditCode(currentRow.code)
+    // setTextInputCode(currentRow.code)
+    // setTextInputName(currentRow.name)
+    // setTextInputInstallationDate(currentRow.installationDate)
+    // setTextInputLocation(currentRow.location)
     setOpenEdit(true);
   }
 
-  const handleCloseEdit = () => {
+
+  // 수정하기 다이얼로그 닫기
+  const handleCloseEdit = (row) => {
+    console.log('handleCloseEdit:', row)
+    if (row) {
+      const newUserList = userList.slice()
+      const inx = newUserList.findIndex((r) => r.code === currentRow.code)
+      newUserList[inx] = row
+      console.log('newUserList:', newUserList)
+      setUserList(newUserList)
+      axios.put(`http://localhost:3002/equipment/${currentRow.code}`, row)
+      .then(response => {
+        console.log('Response: ', response.data);
+      })
+      .catch(error => {
+        console.error('Error: ', error);
+      }) 
+    }
     setOpenEdit(false);
+    setOpenMenu(null);
+
   }
 
-  
-  const handleClickOpenAdd = () => {
-    setOpenAdd(true);
+  // 추가하기 다이얼로그 창 닫기
+  const handleCloseCreate = (row) => {
+    console.log('handleCloseCreate:', row)
+    if (row) {
+      
+      setUserList([row, ...userList]) // 없을 때 새로고침이 필요했음..
+
+      axios.post('http://localhost:3002/equipment', row)
+      .then(response => {
+        console.log('Response: ', response.data);
+      })
+      .catch(error => {
+        console.error('Error: ', error);
+      })
+    }
+    setOpenCreate(false);
   }
 
-  const handleClose = () => {
-    setOpenAdd(false);
+  // 추가하기 다이얼로그 창 열기
+  const handleClickOpenCreate = () => {
+    console.log('handleClickOpenCreate')
+    setTextInputCode('')
+    setTextInputName('')
+    setTextInputInstallationDate('')
+    setTextInputLocation('')
+    setOpenCreate(true);
   }
 
-
-  const handleOpenMenu = (event) => {
-    setOpen(event.currentTarget);
+  const handleOpenMenu = (event, row) => {
+    console.log('select row =', row)
+    setCurrentRow(row)
+    setOpenMenu(event.currentTarget);
   };
 
   const handleCloseMenu = () => {
-    setOpen(null);
+    setOpenMenu(null);
   };
 
   const handleRequestSort = (event, property) => {
@@ -143,7 +225,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = userList.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
@@ -180,21 +262,42 @@ export default function UserPage() {
   };
 
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - userList.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
+  const filteredUsers = applySortFilter(userList, getComparator(order, orderBy), filterName);
 
   const isNotFound = !filteredUsers.length && !!filterName;
 
   const navigate = useNavigate();
-  const routeChange = () => {
+  const routeChangeRepairmentPage = () => {
     const path = '/dashboard/repairment';
     navigate(path);
   }
 
-  const routeChange2 = () => {
+  const routeChangeInspectionPage = () => {
     const path = '/dashboard/inspection';
     navigate(path);
+  }
+
+  const handleItemDelete = () => {
+    console.log(currentRow);
+    // 주어진 함수 통과한 원소로 새로운 배열을 만듦
+    // true를 반환하면 요소를 유지하고, false를 반환하면 버린다
+
+    const isNotCurrentRow = (element) => element.code !== currentRow.code
+    setUserList(userList.filter(isNotCurrentRow))
+    axios.delete(`http://localhost:3002/equipment/${currentRow.code}`)
+      .then(response => {
+        console.log('Response: ', response.data);
+      })
+      .catch(error => {
+        console.error('Error: ', error);
+      })
+    // let idx = user.findIndex(isNotCurrentRow)
+    // console.log(idx)
+    // EQUIPMENTLIST.splice(idx, 1 )
+    // idx = filteredUsers.findIndex(isCurrentRow)
+    // filteredUsers.splice(idx, 1 )
   }
 
   
@@ -211,45 +314,18 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             설비 목록
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenAdd}>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
             설비 추가
           </Button>
-          <Dialog open={openAdd} onClose={handleClose}>
-            <DialogTitle>설비 추가</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                장치를 추가하기 위해 아래 폼을 작성해주세요
-              </DialogContentText>
-              <TextField 
-                margin="dense"
-                label="설비코드"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설비명"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 일자"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 위치"
-                fullWidth
-                variant="standard"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>취소</Button>
-              <Button onClick={handleClose}>추가</Button>
-            </DialogActions>
-          </Dialog>
+          { openCreate && <DialogTag 
+            open={openCreate} 
+            // onClose={handleCloseCreate} 
+            title={'추가하기'}
+            handleClose={handleCloseCreate}
+            confirm={'추가하기'}
+
+          />}
+    
         </Stack>
 
 
@@ -264,7 +340,7 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={userList.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
@@ -276,29 +352,10 @@ export default function UserPage() {
                     const selectedUser = selected.indexOf(name) !== -1;
 
                     return (
-                      <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
+                      <TableRow hover key={code} tabIndex={-1} role="checkbox" selected={selectedUser}>
                         <TableCell padding="checkbox">
                           <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
                         </TableCell>
-
-                        {/* <TableCell component="th" scope="row" padding="none">
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
-                             <Typography variant="subtitle2" noWrap>
-                              {name}
-                            </Typography>
-                          </Stack>
-                        </TableCell>
-
-                        <TableCell align="left">{company}</TableCell>
-
-                        <TableCell align="left">{role}</TableCell>
-
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
-
-                        <TableCell align="left">
-                          <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
-                        </TableCell> */}
                         
                         <TableCell align="left">{code}</TableCell>
 
@@ -314,12 +371,12 @@ export default function UserPage() {
 
                         <TableCell align="left">{isDefective ? '필요' : '불필요'}</TableCell>
 
-                        <TableCell align="left"><Button variant="text" onClick={routeChange}>확인</Button></TableCell>
+                        <TableCell align="left"><Button variant="text" onClick={routeChangeRepairmentPage}>확인</Button></TableCell>
 
-                        <TableCell align="left"><Button variant="text" onClick={routeChange2}>확인</Button></TableCell>
+                        <TableCell align="left"><Button variant="text" onClick={routeChangeInspectionPage}>확인</Button></TableCell>
 
                         <TableCell align="right">
-                          <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
+                          <IconButton size="large" color="inherit" onClick={(e) => handleOpenMenu(e, row)}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
                         </TableCell>
@@ -363,7 +420,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={userList.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -373,8 +430,8 @@ export default function UserPage() {
       </Container>
 
       <Popover
-        open={Boolean(open)}
-        anchorEl={open}
+        open={Boolean(openMenu)}
+        anchorEl={openMenu}
         onClose={handleCloseMenu}
         anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
@@ -394,44 +451,16 @@ export default function UserPage() {
           <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
           수정하기
         </MenuItem>
-        <Dialog open={openEdit} onClose={handleCloseEdit}>
-            <DialogTitle>내용 수정</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                내용을 자유롭게 수정하세요
-              </DialogContentText>
-              <TextField 
-                margin="dense"
-                label="설비코드"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설비명"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 일자"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 위치"
-                fullWidth
-                variant="standard"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleClose}>취소</Button>
-              <Button onClick={handleClose}>추가</Button>
-            </DialogActions>
-          </Dialog>
+        {openEdit && <DialogTag 
+          open={openEdit} 
+          // onClose={handleCloseEdit} 
+          title={'수정하기'}
+          row={currentRow}
+          handleClose={handleCloseEdit}
+          confirm={'수정하기'}
+        />}
 
-        <MenuItem sx={{ color: 'error.main' }}>
+        <MenuItem sx={{ color: 'error.main' }} onClick={handleItemDelete}>
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
           삭제하기
         </MenuItem>
