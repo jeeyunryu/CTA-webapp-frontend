@@ -133,12 +133,12 @@ export default function UserPage() {
     console.log('handleCloseEdit:', row)
     if (row) {
       const newUserList = userList.slice() // userList 복제 (state 직접 변경 권장 X)
-      const inx = newUserList.findIndex((r) => r.code === currentRow.code) // currentRow의 인덱스 찾기
+      const inx = newUserList.findIndex((r) => r.id === currentRow.id) // currentRow의 인덱스 찾기
       newUserList[inx] = row
       console.log('newUserList:', newUserList)
       setUserList(newUserList) // 이 방법으로 state 변경하길 권장!
       // 서버 요청
-      axios.put(`http://localhost:3002/equipment/${currentRow.code}`, row)
+      axios.put(`http://localhost:3002/equipment/${currentRow.id}`, row)
       .then(response => {
         console.log('Response: ', response.data);
       })
@@ -256,10 +256,10 @@ export default function UserPage() {
     // 주어진 함수 통과한 원소로 새로운 배열을 만듦
     // true를 반환하면 요소를 유지하고, false를 반환하면 버린다
 
-    const isNotCurrentRow = (element) => element.code !== currentRow.code
+    const isNotCurrentRow = (element) => element.id !== currentRow.id
     setUserList(userList.filter(isNotCurrentRow)) // currentRow 삭제해 state 업데이트
     // 서버 요청 (currentRow의 code와 함께)
-    axios.delete(`http://localhost:3002/equipment/${currentRow.code}`)
+    axios.delete(`http://localhost:3002/equipment/${currentRow.id}`)
       .then(response => {
         console.log('Response: ', response.data);
       })
