@@ -1,21 +1,15 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
-// import { sentenceCase } from 'change-case';
 import { useState, useEffect } from 'react';
-// import { AgGridReact } from 'ag-grid-react';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
 
-
-// import 'ag-grid-community/styles/ag-grid.css';
-// import 'ag-grid-community/styles/ag-theme-alpine.css';
 // @mui
 import {
   Card,
   Table,
   Stack,
   Paper,
-  Avatar,
   Button,
   Popover,
   Checkbox,
@@ -28,15 +22,9 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  TextField,
 } from '@mui/material';
 // components
-import Label from '../components/label';
+
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 // sections
@@ -92,11 +80,17 @@ function applySortFilter(array, comparator, query) {
     return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
+  
 }
+
+// ----------------------------------------------------------------------
+
 
 export default function UserPage() {
   const [userList, setUserList] = useState([])
+
   const [openMenu, setOpenMenu] = useState(null);
+
   const [currentRow, setCurrentRow] = useState(null);
 
   const [page, setPage] = useState(0);
@@ -112,12 +106,11 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [openCreate, setOpenCreate] = useState(false);
+
   const [openEdit, setOpenEdit] = useState(false);
-  
-  const [textInputCode, setTextInputCode] = useState('');
-  const [textInputName, setTextInputName] = useState('');
-  const [textInputInstallationDate, setTextInputInstallationDate] = useState('');
-  const [textInputLocation, setTextInputLocation] = useState('');
+
+  // ----------------------------------------------------------------------
+
 
   useEffect(() => {
     async function fetchData () {
@@ -128,31 +121,9 @@ export default function UserPage() {
     fetchData();
   }, []);
 
-// 추가하기/수정하기 다이얼로그에서 사용자 입력값 저장함
-  const handleTextInputChangeCode = event => {
-    setTextInputCode(event.target.value);
-  };
-
-  const handleTextInputChangeName = event => {
-    setTextInputName(event.target.value);
-  };
-
-  const handleTextInputChangeInstallationDate = event => {
-    setTextInputInstallationDate(event.target.value);
-  };
-
-  const handleTextInputChangeLocation = event => {
-    setTextInputLocation(event.target.value);
-  };
-
 
 // 수정하기 다이얼로그 열기
   const handleClickOpenEdit = () => {
-    // setTextEditCode(currentRow.code)
-    // setTextInputCode(currentRow.code)
-    // setTextInputName(currentRow.name)
-    // setTextInputInstallationDate(currentRow.installationDate)
-    // setTextInputLocation(currentRow.location)
     setOpenEdit(true);
   }
 
@@ -161,11 +132,12 @@ export default function UserPage() {
   const handleCloseEdit = (row) => {
     console.log('handleCloseEdit:', row)
     if (row) {
-      const newUserList = userList.slice()
-      const inx = newUserList.findIndex((r) => r.code === currentRow.code)
+      const newUserList = userList.slice() // userList 복제 (state 직접 변경 권장 X)
+      const inx = newUserList.findIndex((r) => r.code === currentRow.code) // currentRow의 인덱스 찾기
       newUserList[inx] = row
       console.log('newUserList:', newUserList)
-      setUserList(newUserList)
+      setUserList(newUserList) // 이 방법으로 state 변경하길 권장!
+      // 서버 요청
       axios.put(`http://localhost:3002/equipment/${currentRow.code}`, row)
       .then(response => {
         console.log('Response: ', response.data);
@@ -174,18 +146,21 @@ export default function UserPage() {
         console.error('Error: ', error);
       }) 
     }
+    // 사용자가 취소하기 버튼을 클릭했을 때
     setOpenEdit(false);
     setOpenMenu(null);
 
   }
 
-  // 추가하기 다이얼로그 창 닫기
+  // 추가하기 다이얼로그 닫기
   const handleCloseCreate = (row) => {
     console.log('handleCloseCreate:', row)
-    if (row) {
+    if (row) { // 추가하기 버튼 클릭 시
       
-      setUserList([row, ...userList]) // 없을 때 새로고침이 필요했음..
+      // 새롭게 추가된 row userList 앞에 추가
+      setUserList([row, ...userList]) 
 
+      // 서버 요청 
       axios.post('http://localhost:3002/equipment', row)
       .then(response => {
         console.log('Response: ', response.data);
@@ -194,17 +169,14 @@ export default function UserPage() {
         console.error('Error: ', error);
       })
     }
+    // 취소 버튼 클릭 시 아무 변경 없이 다이얼로그 닫기
     setOpenCreate(false);
   }
 
-  // 추가하기 다이얼로그 창 열기
+  // 추가하기 다이얼로그 열기
   const handleClickOpenCreate = () => {
     console.log('handleClickOpenCreate')
-    setTextInputCode('')
-    setTextInputName('')
-    setTextInputInstallationDate('')
-    setTextInputLocation('')
-    setOpenCreate(true);
+    setOpenCreate(true); // 다이얼로그 열기
   }
 
   const handleOpenMenu = (event, row) => {
@@ -285,7 +257,8 @@ export default function UserPage() {
     // true를 반환하면 요소를 유지하고, false를 반환하면 버린다
 
     const isNotCurrentRow = (element) => element.code !== currentRow.code
-    setUserList(userList.filter(isNotCurrentRow))
+    setUserList(userList.filter(isNotCurrentRow)) // currentRow 삭제해 state 업데이트
+    // 서버 요청 (currentRow의 code와 함께)
     axios.delete(`http://localhost:3002/equipment/${currentRow.code}`)
       .then(response => {
         console.log('Response: ', response.data);
@@ -317,6 +290,7 @@ export default function UserPage() {
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
             설비 추가
           </Button>
+          {/* 사용자사 설비 추가 버튼 클릭 후 DialogTag 그림 */}
           { openCreate && <DialogTag 
             open={openCreate} 
             // onClose={handleCloseCreate} 

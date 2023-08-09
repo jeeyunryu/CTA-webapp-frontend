@@ -16,7 +16,7 @@ function DialogTag(props) {
   //   installationDate: '',
   //   location: ''
   // })
-  const [code, setCode] = useState(props.row?.code ?? '')
+  const [code, setCode] = useState(props.row?.code ?? '') // 추가 시 ->  빈값 설정, 수정 시 -> 해당 row 의 값이 저장됨
   const [name, setName] = useState(props.row?.name ?? '')
   const [installationDate, setInstallationDate] = useState(props.row?.installationDate ?? '' )
   const [location, setLocation] = useState(props.row?.location ?? '')
