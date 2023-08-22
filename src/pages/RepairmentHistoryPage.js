@@ -1,6 +1,7 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { useState } from 'react';
+import axios from 'axios';
 
 // import 'ag-grid-community/styles/ag-grid.css';
 // import 'ag-grid-community/styles/ag-theme-alpine.css';
@@ -10,28 +11,20 @@ import {
   Table,
   Stack,
   Paper,
-  Avatar,
-  Button,
-  Checkbox,
+  Popover,
   TableRow,
   MenuItem,
   TableBody,
   TableCell,
   Container,
   Typography,
-  IconButton,
   TableContainer,
   TablePagination,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
-  TextField,
-  Popover,
+  Button,
 } from '@mui/material';
 // components
-import Label from '../components/label';
+
+import DialogTag from './DialogTag';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 // sections
@@ -39,13 +32,16 @@ import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
 import USERLIST from '../_mock/users';
 
+
 // ----------------------------------------------------------------------
 
+
+
 const TABLE_HEAD = [
-    { id: 'repairedDate', label: '날짜', alignRight: false },
-    { id: 'content', label: '내용', alignRight: false },
-    { id: 'photo', label: '사진', alignRight: false },
-    { id: 'administrator', label: '관리자', alignRight: false },
+    { id: 'repairDate', label: '수리 날짜', alignRight: false },
+    { id: 'repairContent', label: '수리 내용', alignRight: false },
+    { id: 'repairPart', label: '수리 부분', alignRight: false },
+    { id: 'repairManager', label: '수리 담당자', alignRight: false },
   
 ];
 
@@ -83,6 +79,7 @@ function applySortFilter(array, comparator, query) {
 
 
 export default function UserPage() {
+  const [userList, setUserList] = useState([])
   const [open, setOpen] = useState(null);
 
   const [page, setPage] = useState(0);
@@ -98,6 +95,15 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [open2, setOpen2] = useState(false);
+
+  // 수리 이력 추가, 수정
+  const [openCreate, setOpenCreate] = useState(false);
+  const [openEdit, setOpenEdit] = useState(false);
+
+  const [repairDate, setRepairDate] = useState('');
+  const [repairContent, setRepairContent] = useState('');
+  const [repairPart, setRepairPart] = useState('');
+  const [repairManager, setRepairManager] = useState('');
 
   
   const handleClickOpen = () => {
@@ -116,6 +122,38 @@ export default function UserPage() {
   const handleCloseMenu = () => {
     setOpen(null);
   };
+
+  // 수정하기 다이얼로그 열기
+  const handleClickOpenEdit = () => {
+    setOpenEdit(true);
+  }
+  // 수정하기 다이얼로그 창 닫기
+  const handleCloseCreate = (row) => {
+    console.log('handleCloseEdit:', row)
+    if (row) {
+      
+      setUserList([row, ...userList]) // 없을 때 새로고침이 필요했음..
+
+      axios.post('http://localhost:3002/repairment', row)
+      .then(response => {
+        console.log('Response: ', response.data);
+      })
+      .catch(error => {
+        console.error('Error: ', error);
+      })
+    }
+    setOpenCreate(false);
+  }
+
+  // 추가하기 다이얼로그 창 열기
+  const handleClickOpenCreate = () => {
+    console.log('handleClickOpenCreate')
+    setRepairDate('')
+    setRepairContent('')
+    setRepairPart('')
+    setRepairManager('')
+    setOpenCreate(true);
+  }
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -180,48 +218,40 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             수리 이력
           </Typography>
-          {/* <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpen}>
-            설비 추가
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
+            수리이력 추가
           </Button>
-          <Dialog open={open2} onClose={handleClose}>
-            <DialogTitle>설비 추가</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                장치를 추가하기 위해 아래 폼을 작성해주세요
-              </DialogContentText>
-              <TextField 
-                margin="dense"
-                label="설비코드"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설비명"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 일자"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 위치"
-                fullWidth
-                variant="standard"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onclick={handleClose}>취소</Button>
-              <Button onclick={handleClose}>추가</Button>
-            </DialogActions>
-          </Dialog> */}
+          { openCreate && <DialogTag 
+            open={openCreate} 
+            // onClose={handleCloseCreate} 
+            title={'추가하기'}
+            handleClose={handleCloseCreate}
+            confirm={'추가하기'}
+
+          />}
+          
         </Stack>
-
-
+        
+        
+        <Stack direction="column" spacing={5} >
+          <Stack direction="row" spacing={5} alignSelf={'center'}>
+            <img
+              className="exampleimg"
+              alt="MacbookPro"
+              src="/assets/images/macbookpro.jpg"
+              style={{ width: '300px', height: 'auto' }}
+            />
+            <item>
+              <h1>
+                설비 ID: 202007311 
+                <br/>
+                설비명: 맥북 프로
+                <br/>
+                설치 일자: 2020.07.31
+              </h1>
+                
+            </item>
+          </Stack>
         <Card>
           {/* <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} /> */}
 
@@ -240,12 +270,12 @@ export default function UserPage() {
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { name, id, inspectionDate, inspectionTime, color, state } = row;
+                    const { id, code, repairDateDate, repairContent, repairPart, repairManager } = row;
                     // const { id, name, role, status, company, avatarUrl, isVerified, latestInspectionDate, isDefective, repairmentHistory, inspectionHistory } = row;
-                    const selectedUser = selected.indexOf(name) !== -1;
+                    // const selectedUser = selected.indexOf(name) !== -1;
 
                     return (
-                      <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
+                      <TableRow hover key={id} tabIndex={-1} role="checkbox">
                         {/* <TableCell padding="checkbox">
                           <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
                         </TableCell> */}
@@ -269,14 +299,13 @@ export default function UserPage() {
                           <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
                         </TableCell> */}
                         
-                        <TableCell align="left">{inspectionDate}</TableCell>
+                        <TableCell align="left">{repairDate}</TableCell>
 
-                        <TableCell align="left">{inspectionTime}</TableCell>
+                        <TableCell align="left">{repairContent}</TableCell>
 
-                        <TableCell align="left">{color}</TableCell>
+                        <TableCell align="left">{repairPart}</TableCell>
 
-                        <TableCell align="left">{state}</TableCell>
-                        <TableCell align="left">{state}</TableCell>
+                        <TableCell align="left">{repairManager}</TableCell>
 
                     
 
@@ -332,36 +361,10 @@ export default function UserPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
+        </Stack>
+       
       </Container>
 
-      <Popover
-        open={Boolean(open)}
-        anchorEl={open}
-        onClose={handleCloseMenu}
-        anchorOrigin={{ vertical: 'top', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        PaperProps={{
-          sx: {
-            p: 1,
-            width: 140,
-            '& .MuiMenuItem-root': {
-              px: 1,
-              typography: 'body2',
-              borderRadius: 0.75,
-            },
-          },
-        }}
-      >
-        <MenuItem>
-          <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
-          수정하기
-        </MenuItem>
-
-        <MenuItem sx={{ color: 'error.main' }}>
-          <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
-          삭제하기
-        </MenuItem>
-      </Popover>
     </>
   );
 }

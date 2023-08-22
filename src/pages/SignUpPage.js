@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
+
 // @mui
 import { styled } from '@mui/material/styles';
 import { Link, Container, Typography, Divider, Stack, Button } from '@mui/material';
@@ -9,8 +10,7 @@ import useResponsive from '../hooks/useResponsive';
 import Logo from '../components/logo';
 import Iconify from '../components/iconify';
 // sections
-import { LoginForm } from '../sections/auth/login';
-
+import { SignUpForm } from '../sections/auth/login';
 
 // ----------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
 
   const navigate = useNavigate();
   const routeChange = () => {
-    const path = '/signUp';
+    const path = '/login';
     navigate(path)
   }
 
@@ -78,12 +78,12 @@ export default function LoginPage() {
         <Container maxWidth="sm">
           <StyledContent>
             <Typography variant="h4" gutterBottom>
-              로그인
+              회원가입
             </Typography>
 
             <Typography variant="body2" sx={{ mb: 5 }}>
-              회원이 아니신가요? {''}
-              <Link variant="subtitle2" onClick={routeChange}>가입</Link> 하세요
+              이미 회원이신가요? {''}
+              <Link variant="subtitle2" onClick={routeChange}>로그인</Link> 하세요
             </Typography>
 
             {/* <Stack direction="row" spacing={2}>
@@ -106,7 +106,7 @@ export default function LoginPage() {
               </Typography>
             </Divider> */}
 
-            <LoginForm />
+            <SignUpForm />
           </StyledContent>
         </Container>
       </StyledRoot>

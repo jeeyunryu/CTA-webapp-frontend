@@ -6,8 +6,29 @@ import {
     DialogContentText, 
     TextField, 
     DialogActions, 
-    Button 
+    Button,
 } from '@mui/material';
+
+// import DatePicker from 'react-datepicker';
+// import "react-datepicker/dist/react-datepicker.css";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+// import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+// import dayjs from 'dayjs';
+import { format } from 'date-fns';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+
+function toDate (date) {
+  // console.log('toDate:', date)
+  // console.log('toDate: typeof date =', typeof date)
+  if (date) {
+    if (typeof date === 'string') {
+      return new Date(date)
+    }
+    return date
+  }
+  return new Date()
+}
 
 function DialogTag(props) {
   // const row = Object.assign({}, props.row ?? {
@@ -16,13 +37,17 @@ function DialogTag(props) {
   //   installationDate: '',
   //   location: ''
   // })
+  // console.log('currentRow: ', props.row)
+  const id = props.row?.id ?? 0
   const [code, setCode] = useState(props.row?.code ?? '') // 추가 시 ->  빈값 설정, 수정 시 -> 해당 row 의 값이 저장됨
   const [name, setName] = useState(props.row?.name ?? '')
-  const [installationDate, setInstallationDate] = useState(props.row?.installationDate ?? '' )
+  const date = toDate(props.row?.installationDate)
+  // console.log('$$$date =', date, typeof date)
+  const [installationDate, setInstallationDate] = useState(date)
   const [location, setLocation] = useState(props.row?.location ?? '')
-
+  // console.log('date=', installationDate);
   const row = {
-    code, name, installationDate, location
+    id, code, name, installationDate, location
   }
   
     return (
@@ -53,7 +78,7 @@ function DialogTag(props) {
                   // onChange={(ev) => row.name = ev.target.value}
                   onChange={(ev) => setName(ev.target.value)}
                 />
-                <TextField 
+                {/* <TextField 
                   margin="dense"
                   label="설치 일자"
                   fullWidth
@@ -62,7 +87,32 @@ function DialogTag(props) {
                   value={installationDate}
                   onChange={(ev) => setInstallationDate(ev.target.value)}
                   // onChange={(ev) => row.installationDate = ev.target.value}
-                />
+                /> */}
+                 {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DemoContainer components={['DatePicker']}>
+                    <DatePicker label="Basic date picker" />
+                  </DemoContainer>
+                </LocalizationProvider> */}
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="설치 일자"
+                    // value={installationDate ? format(installationDate, 'MM-dd-yyyy') : ''}
+                    value={installationDate}
+                    onChange={(newValue) => {
+                      console.log('create: date =', newValue)
+                      console.log('create: typeof date =', typeof newValue)
+                      setInstallationDate(newValue)
+                    }}
+                    slotProps={{
+                      textField: {
+                        variant: 'standard',
+                        fullWidth: true,
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+                {/* <DatePicker /> */}
+                
                 <TextField 
                   margin="dense"
                   label="설치 위치"

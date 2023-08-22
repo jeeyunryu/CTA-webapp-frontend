@@ -1,8 +1,13 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
-import { useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+// import dayjs from 'dayjs';
+import { format } from 'date-fns';
+import QRCode from 'react-qr-code';
+
+
 
 // @mui
 import {
@@ -22,6 +27,7 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  Dialog,
 } from '@mui/material';
 // components
 
@@ -35,10 +41,12 @@ import DialogTag from './DialogTag';
 
 
 
+
+
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: '설비코드', alignRight: false },
+  { id: 'name', label: '코드', alignRight: false },
   { id: 'company', label: '설비명', alignRight: false },
   { id: 'role', label: '설치일자', alignRight: false },
   { id: 'isVerified', label: '설치위치', alignRight: false },
@@ -47,7 +55,9 @@ const TABLE_HEAD = [
   { id: 'isDefective', label: '수리필요여부', alignRight: false },
   { id: 'repairmentHistory', label: '수리 이력', alignRight: false },
   { id: 'inspectionHistory', label: '점검 이력', alignRight: false },
-  { id: 'etc', label: '비고', alignRight: false}
+  { id: 'edit', label: '수정', alignRight: false},
+  { id: 'delete', label: '삭제', alignRight: false},
+  { id: 'qrcode', label: 'QR 코드', alignRight: false}
   
 ];
 
@@ -92,6 +102,8 @@ export default function UserPage() {
   const [openMenu, setOpenMenu] = useState(null);
 
   const [currentRow, setCurrentRow] = useState(null);
+  // let currentRow = 0;
+
 
   const [page, setPage] = useState(0);
 
@@ -107,38 +119,49 @@ export default function UserPage() {
 
   const [openCreate, setOpenCreate] = useState(false);
 
-  const [openEdit, setOpenEdit] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [openQRCode, setOpenQRCode] = useState(null)
+  const [username, setUsername] = useState('')
 
   // ----------------------------------------------------------------------
 
+  const componentDidMount = () =>  {
+    axios.post(`http://localhost:3002/userData`, window.localStorage.getItem('token'))
+    .then(res => res.json())
+    .then((data) => {
+      console.log(data, 'userData')
+    })
+  }
 
   useEffect(() => {
     async function fetchData () {
       const equipments = await fetchEquipmentData();
-      console.log('equipments =', equipments)
+      // console.log('equipments =', equipments)
       setUserList(equipments);
     }
     fetchData();
+   setUsername(window.localStorage.getItem('username'))
+    // console.log(username)
   }, []);
 
 
 // 수정하기 다이얼로그 열기
-  const handleClickOpenEdit = () => {
-    setOpenEdit(true);
-  }
+  // const handleClickOpenEdit = () => {
+  //   setEditingRow(true);
+  // }
 
 
   // 수정하기 다이얼로그 닫기
   const handleCloseEdit = (row) => {
-    console.log('handleCloseEdit:', row)
+    // console.log('handleCloseEdit:', row)
     if (row) {
       const newUserList = userList.slice() // userList 복제 (state 직접 변경 권장 X)
-      const inx = newUserList.findIndex((r) => r.id === currentRow.id) // currentRow의 인덱스 찾기
+      const inx = newUserList.findIndex((r) => r.id === row.id) // currentRow의 인덱스 찾기
       newUserList[inx] = row
-      console.log('newUserList:', newUserList)
+      // console.log('newUserList:', newUserList)
       setUserList(newUserList) // 이 방법으로 state 변경하길 권장!
       // 서버 요청
-      axios.put(`http://localhost:3002/equipment/${currentRow.id}`, row)
+      axios.put(`http://localhost:3002/equipment/${row.id}`, row, {headers: {Authorization: `Bearer ${window.localStorage.getItem('token')}`}})
       .then(response => {
         console.log('Response: ', response.data);
       })
@@ -147,23 +170,27 @@ export default function UserPage() {
       }) 
     }
     // 사용자가 취소하기 버튼을 클릭했을 때
-    setOpenEdit(false);
+    setEditingRow(null);
     setOpenMenu(null);
 
   }
 
   // 추가하기 다이얼로그 닫기
   const handleCloseCreate = (row) => {
-    console.log('handleCloseCreate:', row)
+    // console.log('handleCloseCreate:', row)
     if (row) { // 추가하기 버튼 클릭 시
-      
+      // console.log('closeCreate: row =', row)
       // 새롭게 추가된 row userList 앞에 추가
       setUserList([row, ...userList]) 
 
       // 서버 요청 
-      axios.post('http://localhost:3002/equipment', row)
+      axios.post('http://localhost:3002/equipment', row, {headers: {Authorization: `Bearer ${window.localStorage.getItem('token')}`}})
       .then(response => {
-        console.log('Response: ', response.data);
+        if(response.data.error) {
+          if(response.data.error.exists)
+            alert('access denied!')
+        }
+        else console.log('Response: ', response.data);
       })
       .catch(error => {
         console.error('Error: ', error);
@@ -175,13 +202,13 @@ export default function UserPage() {
 
   // 추가하기 다이얼로그 열기
   const handleClickOpenCreate = () => {
-    console.log('handleClickOpenCreate')
+    // console.log('handleClickOpenCreate')
     setOpenCreate(true); // 다이얼로그 열기
   }
 
   const handleOpenMenu = (event, row) => {
     console.log('select row =', row)
-    setCurrentRow(row)
+    // setCurrentRow(row)
     setOpenMenu(event.currentTarget);
   };
 
@@ -251,15 +278,17 @@ export default function UserPage() {
     navigate(path);
   }
 
-  const handleItemDelete = () => {
-    console.log(currentRow);
+  const handleItemDelete = (row) => {
+    // setCurrentRow(row)
+    // currentRow = row
+    // console.log(currentRow);
     // 주어진 함수 통과한 원소로 새로운 배열을 만듦
     // true를 반환하면 요소를 유지하고, false를 반환하면 버린다
-
-    const isNotCurrentRow = (element) => element.id !== currentRow.id
+    // console.log('row: ', row);
+    const isNotCurrentRow = (element) => element.id !== row.id
     setUserList(userList.filter(isNotCurrentRow)) // currentRow 삭제해 state 업데이트
     // 서버 요청 (currentRow의 code와 함께)
-    axios.delete(`http://localhost:3002/equipment/${currentRow.id}`)
+    axios.delete(`http://localhost:3002/equipment/${row.id}`, {headers: {Authorization: `Bearer ${window.localStorage.getItem('token')}`}})
       .then(response => {
         console.log('Response: ', response.data);
       })
@@ -273,19 +302,62 @@ export default function UserPage() {
     // filteredUsers.splice(idx, 1 )
   }
 
+  const handleOpenEditDialog = (row) => {
+    // console.log('row: ', row)
+    // currentRow = row
+    // setCurrentRow(row)
+    // console.log('event.currentTarget: ', event.currentTarget)
+    // console.log('currentRow: ', currentRow)
+    // setOpenE/dit(event.currentTarget)
+    
+    setEditingRow(row);
+  }
+
+  const handleClickOk = (row) => {
+    // alert('정말로 삭제하시겠습니까?')
+    // console.log('row: ', row);
+    if (window.confirm("정말로 삭제하시겠습니까?")) {
+      handleItemDelete(row)
+    }
+  }
+
+
+  const handleLogout = () => {
+    window.localStorage.clear();
+    window.location.href = '/login'
+  }
+
+  const handleClickQR = (row) => {
+    setOpenQRCode(true)
+    console.log(row)
+    setCurrentRow(row)
+  }
+
+  const handleCloseQRCode = () => {
+    setOpenQRCode(false)
+  }
+
+
+  const value = 'Kitty'
+
   
 
 
   return (
     <>
       <Helmet>
-        <title> User | Minimal UI </title>
+        <title> CTA </title>
       </Helmet>
-
+      {/* <QRCode
+    size={256}
+    style={{ height: "auto", maxWidth: "50%", width: "50%" }}
+    value={value}
+    viewBox={`0 0 256 256`}
+    /> */}
       <Container>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={5}>
           <Typography variant="h4" gutterBottom>
-            설비 목록
+            안녕하세요 {username}님
           </Typography>
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpenCreate}>
             설비 추가
@@ -299,12 +371,13 @@ export default function UserPage() {
             confirm={'추가하기'}
 
           />}
+          
     
         </Stack>
 
 
         <Card>
-          <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} />
+          {/* <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} /> */}
 
           <Scrollbar>
            
@@ -334,8 +407,9 @@ export default function UserPage() {
                         <TableCell align="left">{code}</TableCell>
 
                         <TableCell align="left">{name}</TableCell>
-
-                        <TableCell align="left">{installationDate}</TableCell>
+                      
+                        {/* <TableCell align="left">{installationDate ? format(installationDate, 'yyyy-MM-dd') : ''}</TableCell> */}
+                        <TableCell align="left">{showDate(installationDate)}</TableCell>
 
                         <TableCell align="left">{location}</TableCell>
 
@@ -349,11 +423,18 @@ export default function UserPage() {
 
                         <TableCell align="left"><Button variant="text" onClick={routeChangeInspectionPage}>확인</Button></TableCell>
 
-                        <TableCell align="right">
+                        <TableCell align="left"><IconButton variant="text" onClick={() => handleOpenEditDialog(row)}><Iconify icon={'material-symbols:edit'} /></IconButton></TableCell>
+                        
+                        {/* <TableCell align="left"><IconButton variant="text" onClick={() => handleItemDelete(row)}><Iconify icon={'mdi:trashcan'} /></IconButton></TableCell> */}
+                        <TableCell align="left"><IconButton variant="text" onClick={() => handleClickOk(row)}><Iconify icon={'mdi:trashcan'} /></IconButton></TableCell>
+
+                        <TableCell><Button variant='text' onClick={() => handleClickQR(row)}>확인</Button></TableCell>
+
+                        {/* <TableCell align="right">
                           <IconButton size="large" color="inherit" onClick={(e) => handleOpenMenu(e, row)}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     );
                   })}
@@ -401,9 +482,33 @@ export default function UserPage() {
             onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </Card>
+        <Button variant="contained" onClick={handleLogout}>
+            로그아웃
+          </Button>
       </Container>
+      {editingRow && <DialogTag 
+                          open={!!editingRow} 
+                          // onClose={handleCloseEdit} 
+                          title={'수정하기'}
+                          row={editingRow}
+                          handleClose={handleCloseEdit}
+                          confirm={'수정하기'}
+                        />}
 
-      <Popover
+      {openQRCode && <Dialog
+        open={openQRCode} 
+        onClose={handleCloseQRCode}
+        >
+          <QRCode
+            size={256}
+            style={{ height: "auto", maxWidth: "50%", width: "50%" }}
+            // value={currentRow.code}
+            value='http://192.168.0.25:3002/equipment'
+            viewBox={`0 0 256 256`}
+          /> 
+        </Dialog>
+    }
+      {/* <Popover
         open={Boolean(openMenu)}
         anchorEl={openMenu}
         onClose={handleCloseMenu}
@@ -425,8 +530,8 @@ export default function UserPage() {
           <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
           수정하기
         </MenuItem>
-        {openEdit && <DialogTag 
-          open={openEdit} 
+        {editingRow && <DialogTag 
+          open={editingRow} 
           // onClose={handleCloseEdit} 
           title={'수정하기'}
           row={currentRow}
@@ -438,7 +543,19 @@ export default function UserPage() {
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
           삭제하기
         </MenuItem>
-      </Popover>
+      </Popover> */}
     </>
   );
+}
+
+function showDate (date) {
+  const fmt = 'yyyy-MM-dd'
+  // console.log('showDate:', date)
+  if (date) {
+    if (typeof date === 'string') {
+      return format(new Date(date), fmt)
+    }
+    return format(date, fmt)
+  }
+  return ''
 }

@@ -7,14 +7,15 @@ import { LoadingButton } from '@mui/lab';
 // components
 import Iconify from '../../../components/iconify';
 
+
 // ----------------------------------------------------------------------
 
-export function LoginForm() {
+export function SignUpForm() {
   const navigate = useNavigate();
 
-  const [showPassword, setShowPassword] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
 
 
@@ -26,44 +27,27 @@ export function LoginForm() {
     e.preventDefault();
     console.log(username, password)
     const newUser = { username, password }
-    axios.post(`http://localhost:3002/login`, newUser)
+    axios.post(`http://localhost:3002/signUp`, newUser)
     .then(response => {
       console.log('Response: ', response.data);
       if (response.data.error) {
-        if (response.data.error.exists === false) {
-          alert('User not found!')
+        if (response.data.error.exists === true) {
+          alert('User exists!')
         }
       }
       else {
-        alert('login successful')
-        window.localStorage.setItem('token', JSON.stringify(response.data.token))
-        window.localStorage.setItem('username', username)
-        const savedPath = window.localStorage.getItem('savedPath')
-        if (savedPath) {
-          window.localStorage.removeItem('savedPath')
-          window.location.href = savedPath
-        } else {
-          window.location.href = '/'
-        }
-        // window.location.href = window.localStorage.getItem('savedPath')
-        // savedPath 있는지 확인
-        // 없다면 home 으로 이동
-        // 있다면 이동 후 지우기
+        alert('가입이 완료되었습니다!')
       }
-      // // if(response.data.error.exists === true) {
-      // //   alert('User exists!')
-      // }
     })
-   
     .catch(error => {
       console.error('Error: ', error);
     })
   }
 
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <Stack spacing={3}>
-        <TextField name="username" label="Username" onChange={(e) => setUsername(e.target.value)}/>
+        <TextField name="username" label="Username" onChange={e => setUsername(e.target.value)}/>
 
         <TextField
           name="password"
@@ -89,7 +73,7 @@ export function LoginForm() {
         </Link>
       </Stack> */}
 
-      <LoadingButton fullWidth size="large" type="submit" variant="contained" onClick={handleSubmit} style={{marginTop: '10px'}}>
+      <LoadingButton fullWidth size="large" type="submit" variant="contained" style={{marginTop: '10px'}}>
         확인
       </LoadingButton>
     </form>

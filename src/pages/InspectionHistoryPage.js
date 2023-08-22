@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 
 // import 'ag-grid-community/styles/ag-grid.css';
@@ -28,7 +28,8 @@ import Scrollbar from '../components/scrollbar';
 // sections
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
-import USERLIST from '../_mock/users';
+// import USERLIST from '../_mock/users';
+import { fetchInspectionData } from '../_mock/inspections'
 
 
 // ----------------------------------------------------------------------
@@ -69,7 +70,7 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return filter(array, (_user) => _user.state.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
@@ -77,6 +78,7 @@ function applySortFilter(array, comparator, query) {
 
 
 export default function UserPage() {
+  const [inspectionList, setInspectionList] = useState([])
   const [open, setOpen] = useState(null);
 
   const [page, setPage] = useState(0);
@@ -88,12 +90,19 @@ export default function UserPage() {
   const [orderBy, setOrderBy] = useState('name');
 
   const [filterName, setFilterName] = useState('');
+  const [filterState, setFilterState] = useState('');
 
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [open2, setOpen2] = useState(false);
 
-  
+ useEffect (() => {
+  async function fetchData () {
+    const inspections = await fetchInspectionData();
+    setInspectionList(inspections)
+  }
+  fetchData()
+ }, []) 
   const handleClickOpen = () => {
     setOpen2(true);
   }
@@ -119,7 +128,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = inspectionList.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
@@ -150,16 +159,19 @@ export default function UserPage() {
     setRowsPerPage(parseInt(event.target.value, 10));
   };
 
-  const handleFilterByName = (event) => {
+  const handleFilterByState = (event) => {
     setPage(0);
-    setFilterName(event.target.value);
+   // setFilterName(event.target.value);
+    setFilterState(event.target.value)
+    
   };
 
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - inspectionList.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
-
+  //  const filteredUsers = applySortFilter(inspectionList, getComparator(order, orderBy), filterName);
+  const filteredUsers = applySortFilter(inspectionList, getComparator(order, orderBy), filterState)
+  
   const isNotFound = !filteredUsers.length && !!filterName;
 
 
@@ -174,50 +186,13 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             점검 이력
           </Typography>
-          {/* <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={handleClickOpen}>
-            설비 추가
-          </Button>
-          <Dialog open={open2} onClose={handleClose}>
-            <DialogTitle>설비 추가</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                장치를 추가하기 위해 아래 폼을 작성해주세요
-              </DialogContentText>
-              <TextField 
-                margin="dense"
-                label="설비코드"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설비명"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 일자"
-                fullWidth
-                variant="standard"
-              />
-              <TextField 
-                margin="dense"
-                label="설치 위치"
-                fullWidth
-                variant="standard"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onclick={handleClose}>취소</Button>
-              <Button onclick={handleClose}>추가</Button>
-            </DialogActions>
-          </Dialog> */}
         </Stack>
 
 
         <Card>
-          {/* <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={handleFilterByName} /> */}
+          {/* <UserListToolbar numSelected={selected.length} filterName={filterName} onFilterName={} /> */}
+          { <UserListToolbar numSelected={selected.length} filterName={filterState} onFilterName={handleFilterByState} />}
+          
 
           <Scrollbar>
            
@@ -227,7 +202,7 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={inspectionList.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
@@ -304,7 +279,7 @@ export default function UserPage() {
 
                           <Typography variant="body2">
                             No results found for &nbsp;
-                            <strong>&quot;{filterName}&quot;</strong>.
+                            <strong>&quot;{filterState}&quot;</strong>.
                             <br /> Try checking for typos or using complete words.
                           </Typography>
                         </Paper>
@@ -319,7 +294,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={inspectionList.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
